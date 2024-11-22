@@ -1,9 +1,12 @@
 import { Controller, Get, Req, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
 import { GoogleAuthGuard } from './utils/Guard';
+import { AuthService } from './auth.service';
 
 @Controller('auth')
 export class AuthController {
+  constructor(private readonly authService: AuthService) {}
+
   @Get('google/login')
   @UseGuards(GoogleAuthGuard)
   handleLogin() {
@@ -18,10 +21,10 @@ export class AuthController {
   }
 
   @Get('status')
-  user(@Req() request: Request) {
-    console.log(request.user);
+  async user(@Req() request: Request) {
     if (request.user) {
-      return { msg: 'Authenticated' };
+      const user = await this.authService.findUser(request.user.id);
+      return { msg: 'Authenticated', user };
     } else {
       return { msg: 'Not Authenticated' };
     }

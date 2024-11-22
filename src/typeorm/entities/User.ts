@@ -1,6 +1,6 @@
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
-@Entity({ name: 'users_cloud' })
+@Entity('users_cloud')
 export class User {
   @PrimaryGeneratedColumn()
   id: number;
@@ -10,4 +10,10 @@ export class User {
 
   @Column()
   displayName: string;
+
+  @Column({ nullable: true })
+  accessToken: string;
+
+  @Column({ nullable: true })
+  refreshToken: string;
 }

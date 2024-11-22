@@ -1,18 +1,29 @@
-import { Controller, Get, Query } from '@nestjs/common';
-import { AuthService } from './auth.service';
+import { Controller, Get, Req, UseGuards } from '@nestjs/common';
+import { Request } from 'express';
+import { GoogleAuthGuard } from './utils/Guard';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
-
-  @Get('login')
-  login(): string {
-    return this.authService.getAuthUrl();
+  @Get('google/login')
+  @UseGuards(GoogleAuthGuard)
+  handleLogin() {
+    return { msg: 'Google Authentication' };
   }
 
-  @Get('callback')
-  async callback(@Query('code') code: string) {
-    const tokens = await this.authService.getTokens(code);
-    return tokens; // Bạn sẽ cần lưu trữ tokens trong DB để sử dụng sau này
+  // api/auth/google/redirect
+  @Get('google/redirect')
+  @UseGuards(GoogleAuthGuard)
+  handleRedirect() {
+    return { msg: 'OK' };
+  }
+
+  @Get('status')
+  user(@Req() request: Request) {
+    console.log(request.user);
+    if (request.user) {
+      return { msg: 'Authenticated' };
+    } else {
+      return { msg: 'Not Authenticated' };
+    }
   }
 }

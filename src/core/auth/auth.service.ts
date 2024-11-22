@@ -1,35 +1,28 @@
 import { Injectable } from '@nestjs/common';
-import { google } from 'googleapis';
+import { InjectRepository } from '@nestjs/typeorm';
+import { User } from 'src/typeorm/entities/User';
+import { UserDetails } from 'src/utils/types';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class AuthService {
-  private readonly oauth2Client;
+  constructor(
+    @InjectRepository(User) private readonly userRepository: Repository<User>,
+  ) {}
 
-  constructor() {
-    // Cấu hình OAuth2 Client với client ID và client secret của bạn
-    this.oauth2Client = new google.auth.OAuth2(
-      'YOUR_GOOGLE_CLIENT_ID',
-      'YOUR_GOOGLE_CLIENT_SECRET',
-      'YOUR_REDIRECT_URL',
-    );
+  async validateUser(details: UserDetails) {
+    console.log('AuthService');
+    console.log(details);
+    const user = await this.userRepository.findOneBy({ email: details.email });
+    console.log(user);
+    if (user) return user;
+    console.log('User not found. Creating...');
+    const newUser = this.userRepository.create(details);
+    return this.userRepository.save(newUser);
   }
 
-  // Lấy URL login OAuth
-  getAuthUrl(): string {
-    const scopes = [
-      'https://www.googleapis.com/auth/drive',
-      'https://www.googleapis.com/auth/drive.file',
-    ];
-    return this.oauth2Client.generateAuthUrl({
-      access_type: 'offline',
-      scope: scopes,
-    });
-  }
-
-  // Lấy access token sau khi người dùng login thành công
-  async getTokens(code: string) {
-    const { tokens } = await this.oauth2Client.getToken(code);
-    this.oauth2Client.setCredentials(tokens);
-    return tokens;
+  async findUser(id: number) {
+    const user = await this.userRepository.findOneBy({ id });
+    return user;
   }
 }

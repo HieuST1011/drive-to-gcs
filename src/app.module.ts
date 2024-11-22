@@ -1,12 +1,27 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from './core/auth/auth.module';
-import { KafkaModule } from './kafka/kafka.module';
-import { GcsService } from './gcs/gcs.service';
-import { GcsModule } from './gcs/gcs.module';
+import { ConfigModule } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { User } from './typeorm/entities/User';
+import { PassportModule } from '@nestjs/passport';
 
 @Module({
-  imports: [AuthModule, KafkaModule, GcsModule],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    TypeOrmModule.forRoot({
+      type: 'postgres',
+      host: process.env.POSTGRES_HOST,
+      port: parseInt(process.env.POSTGRES_PORT),
+      username: process.env.POSTGRES_USER,
+      password: process.env.POSTGRES_PASSWORD,
+      database: process.env.POSTGRES_DATABASE,
+      entities: [User],
+      synchronize: true,
+    }),
+    AuthModule,
+    PassportModule.register({ session: true }),
+  ],
   controllers: [],
-  providers: [GcsService],
+  providers: [],
 })
 export class AppModule {}

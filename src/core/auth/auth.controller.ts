@@ -1,7 +1,16 @@
-import { Controller, Get, Req, UseGuards } from '@nestjs/common';
-import { Request } from 'express';
+import {
+  Controller,
+  Get,
+  Req,
+  Res,
+  UnauthorizedException,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
+import { Response } from 'express';
 import { GoogleAuthGuard } from './utils/Guard';
 import { AuthService } from './auth.service';
+import { CheckTokenExpiryGuard } from './utils/checkTokenExpiryGuard';
 
 @Controller('auth')
 export class AuthController {
@@ -16,17 +25,33 @@ export class AuthController {
   // api/auth/google/redirect
   @Get('google/redirect')
   @UseGuards(GoogleAuthGuard)
-  handleRedirect() {
-    return { msg: 'OK' };
+  googleLoginCallback(@Request() req: any, @Res() res: Response) {
+    const googleToken = req.user.accessToken;
+    const googleRefreshToken = req.user.refreshToken;
+
+    res.cookie('access_token', googleToken, { httpOnly: true });
+    res.cookie('refresh_token', googleRefreshToken, {
+      httpOnly: true,
+    });
+
+    res.redirect('http://localhost:3000/api/auth/profile');
   }
 
-  @Get('status')
-  async user(@Req() request: Request) {
-    if (request.user) {
-      const user = await this.authService.findUser(request.user.id);
-      return { msg: 'Authenticated', user };
-    } else {
-      return { msg: 'Not Authenticated' };
-    }
+  @UseGuards(CheckTokenExpiryGuard)
+  @Get('profile')
+  async getProfile(@Request() req: any) {
+    const accessToken = req.cookies['access_token'];
+    if (accessToken)
+      return (await this.authService.getProfile(accessToken)).data;
+    throw new UnauthorizedException('No access token');
+  }
+
+  @Get('logout')
+  logout(@Req() req: any, @Res() res: Response) {
+    const refreshToken = req.cookies['refresh_token'];
+    res.clearCookie('access_token');
+    res.clearCookie('refresh_token');
+    this.authService.revokeGoogleToken(refreshToken);
+    res.redirect('http://localhost:3000/api');
   }
 }

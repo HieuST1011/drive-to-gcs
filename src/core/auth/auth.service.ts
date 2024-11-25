@@ -11,24 +11,10 @@ export class AuthService {
     @InjectRepository(User) private readonly userRepository: Repository<User>,
   ) {}
 
-  // async validateUser(details: UserDetails) {
-  //   console.log('AuthService');
-  //   console.log(details);
-  //   const user = await this.userRepository.findOneBy({ email: details.email });
-  //   console.log(user);
-  //   if (user) return user;
-  //   console.log('User not found. Creating...');
-  //   const newUser = this.userRepository.create(details);
-  //   return this.userRepository.save(newUser);
-  // }
-
   async validateUser(
     details: UserDetails,
     tokens?: { accessToken: string; refreshToken: string },
   ) {
-    console.log('AuthService');
-    console.log(details);
-
     const user = await this.userRepository.findOneBy({ email: details.email });
     if (user) {
       // Cập nhật accessToken và refreshToken
@@ -47,31 +33,60 @@ export class AuthService {
   }
 
   async findUser(id: number) {
-    const user = await this.userRepository.findOneBy({ id });
-    return user;
+    return await this.userRepository.findOneBy({ id });
   }
 
-  async refreshAccessToken(userId: number) {
-    const user = await this.findUser(userId);
-    if (!user?.refreshToken) {
-      throw new Error('User not found or missing refresh token');
+  async getNewAccessToken(refreshToken: string): Promise<string> {
+    try {
+      const response = await axios.post(
+        'https://accounts.google.com/o/oauth2/token',
+        {
+          client_id: process.env.GOOGLE_CLIENT_ID,
+          client_secret: process.env.GOOGLE_CLIENT_SECRET,
+          refresh_token: refreshToken,
+          grant_type: 'refresh_token',
+        },
+      );
+
+      return response.data.access_token;
+    } catch (error) {
+      throw new Error('Failed to refresh the access token.');
     }
+  }
 
-    const url = 'https://oauth2.googleapis.com/token';
-    const data = {
-      client_id: process.env.GOOGLE_CLIENT_ID,
-      client_secret: process.env.GOOGLE_CLIENT_SECRET,
-      refresh_token: user.refreshToken,
-      grant_type: 'refresh_token',
-    };
+  async getProfile(token: string) {
+    try {
+      return await axios.get(
+        `https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=${token}`,
+      );
+    } catch (error) {
+      console.error('Failed to revoke the token:', error);
+    }
+  }
 
-    const response = await axios.post(url, data);
-    const { access_token } = response.data;
+  async isTokenExpired(token: string): Promise<boolean> {
+    try {
+      const response = await axios.get(
+        `https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${token}`,
+      );
 
-    // Lưu accessToken mới vào database
-    user.accessToken = access_token;
-    await this.userRepository.save(user);
+      const expiresIn = response.data.expires_in;
 
-    return access_token;
+      if (!expiresIn || expiresIn <= 0) {
+        return true;
+      }
+    } catch (error) {
+      return true;
+    }
+  }
+
+  async revokeGoogleToken(token: string) {
+    try {
+      await axios.get(
+        `https://accounts.google.com/o/oauth2/revoke?token=${token}`,
+      );
+    } catch (error) {
+      console.error('Failed to revoke the token:', error);
+    }
   }
 }

@@ -13,6 +13,7 @@ export class CheckTokenExpiryGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const accessToken = request.cookies['access_token'];
+    let validAccessToken = accessToken;
 
     if (await this.authService.isTokenExpired(accessToken)) {
       const refreshToken = request.cookies['refresh_token'];
@@ -28,10 +29,20 @@ export class CheckTokenExpiryGuard implements CanActivate {
           httpOnly: true,
         });
         request.cookies['access_token'] = newAccessToken;
+        validAccessToken = newAccessToken;
       } catch (error) {
         throw new UnauthorizedException('Failed to refresh token');
       }
     }
+
+    // Find user by the valid access token
+    const user = await this.authService.findUserByAccessToken(validAccessToken);
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    // Attach the user to the request object for later use
+    request.user = user;
 
     return true;
   }

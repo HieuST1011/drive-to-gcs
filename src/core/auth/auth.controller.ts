@@ -2,14 +2,14 @@ import {
   Controller,
   Get,
   Req,
+  Request,
   Res,
   UnauthorizedException,
   UseGuards,
-  Request,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { AuthService } from './auth.service';
-import { GoogleAuthGuard, CheckTokenExpiryGuard } from './utils/Guard';
+import { CheckTokenExpiryGuard, GoogleAuthGuard } from './utils/Guard';
 
 @Controller('auth')
 export class AuthController {

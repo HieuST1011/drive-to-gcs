@@ -5,7 +5,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './typeorm/entities/User';
 import { PassportModule } from '@nestjs/passport';
 import { DriveModule } from './core/drive/drive.module';
-import { SyncConfig } from './typeorm/entities/FolderConfiguration';
+import { FolderConfiguration } from './typeorm/entities/FolderConfiguration';
+import { ClientsModule, Transport } from '@nestjs/microservices';
 
 @Module({
   imports: [
@@ -17,12 +18,26 @@ import { SyncConfig } from './typeorm/entities/FolderConfiguration';
       username: process.env.POSTGRES_USER,
       password: process.env.POSTGRES_PASSWORD,
       database: process.env.POSTGRES_DATABASE,
-      entities: [User, SyncConfig],
+      entities: [User, FolderConfiguration],
       synchronize: true,
     }),
     AuthModule,
     DriveModule,
     PassportModule.register({ session: true }),
+    ClientsModule.register([
+      {
+        name: 'KAFKA_SERVICE',
+        transport: Transport.KAFKA,
+        options: {
+          client: {
+            brokers: ['localhost:9093'], // Kafka broker URL
+          },
+          consumer: {
+            groupId: 'drive-push-notifications-group', // Consumer group ID
+          },
+        },
+      },
+    ]),
   ],
   controllers: [],
   providers: [],

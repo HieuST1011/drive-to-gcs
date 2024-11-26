@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import axios from 'axios';
 import { User } from 'src/typeorm/entities/User';
 import { UserDetails } from 'src/types/userDetail';
 import { Repository } from 'typeorm';
-import axios from 'axios';
 
 @Injectable()
 export class AuthService {
@@ -92,5 +92,15 @@ export class AuthService {
     } catch (error) {
       console.error('Failed to revoke the token:', error);
     }
+  }
+
+  // Fetch access token from cookies
+  async getAccessTokenFromCookies(req: any) {
+    return req.cookies['access_token'] || null;
+  }
+
+  // Fetch refresh token from cookies
+  async getRefreshTokenFromCookies(req: any) {
+    return req.cookies['refresh_token'] || null;
   }
 }

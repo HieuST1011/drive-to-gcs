@@ -1,84 +1,65 @@
 import {
   Controller,
   Get,
-  UnauthorizedException,
+  Post,
+  Delete,
+  Body,
   Request,
   UseGuards,
-  Post,
 } from '@nestjs/common';
-import { GoogleDriveService } from './drive.service';
-import { AuthService } from '../auth/auth.service';
 import { CheckTokenExpiryGuard } from '../auth/utils/Guard';
+import { FolderConfigService } from '../folderConfig/folderConfig.service';
+import { GoogleDriveService } from './drive.service';
 
 @Controller('google-drive')
+@UseGuards(CheckTokenExpiryGuard)
 export class GoogleDriveController {
   constructor(
     private readonly googleDriveService: GoogleDriveService,
-    private readonly authService: AuthService,
+    private readonly folderConfigService: FolderConfigService,
   ) {}
 
-  // Endpoint to list folders in Google Drive
   @Get('folders')
-  @UseGuards(CheckTokenExpiryGuard)
-  async getFolders(@Request() req: any) {
+  async listFolders(@Request() req: any) {
     const accessToken = req.cookies['access_token'];
-
-    if (!accessToken) {
-      throw new UnauthorizedException('No access token');
-    }
-
-    // Authenticate with Google API using the access token
-    this.googleDriveService.authenticate(accessToken);
-
-    // Fetch folders from Google Drive
-    const folders = await this.googleDriveService.listDriveFolders();
-    return folders;
+    return this.googleDriveService.listFolders(accessToken);
   }
 
-  @Get('create-folder')
-  @UseGuards(CheckTokenExpiryGuard)
-  async createFolder(@Request() req: any) {
-    const accessToken = req.cookies['access_token'];
-
-    if (!accessToken) {
-      throw new UnauthorizedException('No access token');
-    }
-
-    const folderName = 'New Folder'; // Example folder name
-
-    // Authenticate with Google API using the access token
-    this.googleDriveService.authenticate(accessToken);
-
-    // Create a new folder in Google Drive
-    const newFolder = await this.googleDriveService.createFolder(folderName);
-    return newFolder;
+  // List all folder configurations (including push notification setup) for the user
+  @Get('configurations')
+  async listConfigurations(@Request() req: any) {
+    const userId = req.user.id; // Assuming you store user info in `req.user`
+    return this.folderConfigService.listConfigurations(userId); // Get the folder configurations from the database
   }
 
-  @Post('sync/configure')
-  @UseGuards(CheckTokenExpiryGuard)
-  async configureSyncFolders(@Request() req: any) {
-    const accessToken = req.cookies['access_token'];
+  // Save a folder configuration (and set up a push notification)
+  @Post('configurations')
+  async saveConfiguration(
+    @Request() req: any,
+    @Body() body: { folderId: string; folderName: string; webhookUrl: string },
+  ) {
+    const userId = req.user.id;
+    const { folderId, folderName, webhookUrl } = body;
 
-    if (!accessToken) {
-      throw new UnauthorizedException('No access token');
-    }
-
-    const user = await this.authService.findUserByAccessToken(accessToken);
-    const userId = user.id;
-    const { selectedFolderIds } = req.body; // Get selected folder IDs from the request body
-
-    // Save selected folders to the database with the user's ID
-    await this.googleDriveService.saveSyncConfig(userId, selectedFolderIds);
-
-    return { message: 'Folders successfully configured for sync.' };
+    // Save the folder configuration and set up push notification
+    return this.folderConfigService.saveConfiguration(
+      userId,
+      folderId,
+      folderName,
+      webhookUrl, // Providing webhook URL to receive notifications
+    );
   }
 
-  @Get('sync/configure')
-  async getSyncFolders(@Request() req: any) {
-    const userId = req.user.id; // Assuming the user information is available in req.user
+  // Delete a folder configuration and stop the associated push notification
+  @Delete('configurations')
+  async deleteConfiguration(
+    @Request() req: any,
+    @Body() body: { folderId: string },
+  ) {
+    const userId = req.user.id;
+    const { folderId } = body;
 
-    // Fetch all the configured folders for the user
-    const folders = await this.googleDriveService.getSyncConfig(userId);
-    return folders;
+    // Delete the folder configuration and stop the push notification
+    return this.folderConfigService.deleteConfiguration(userId, folderId);
   }
 }

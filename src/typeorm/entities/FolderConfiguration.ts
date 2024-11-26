@@ -1,16 +1,25 @@
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
 @Entity()
-export class SyncConfig {
-  @PrimaryGeneratedColumn()
-  id: number;
+export class FolderConfiguration {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column()
-  userId: number; // Store the userId directly
+  folderId: string;
 
   @Column()
-  folderId: string; // Google Drive folder ID
+  folderName: string;
 
   @Column()
-  syncStatus: string; // Status: "pending", "syncing", "completed", "error"
+  userId: string; // Link to your user system, e.g., the Google account ID
+
+  @Column({ nullable: true })
+  channelId: string; // The channel ID for the push notification
+
+  @Column({ nullable: true })
+  webhookUrl: string; // URL for the webhook to send notifications to
+
+  @Column({ nullable: true })
+  expiration: string; // The expiration time of the notification channel
 }

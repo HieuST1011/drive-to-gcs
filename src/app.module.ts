@@ -4,6 +4,8 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './typeorm/entities/User';
 import { PassportModule } from '@nestjs/passport';
+import { DriveModule } from './core/drive/drive.module';
+import { SyncConfig } from './typeorm/entities/FolderConfiguration';
 
 @Module({
   imports: [
@@ -15,10 +17,11 @@ import { PassportModule } from '@nestjs/passport';
       username: process.env.POSTGRES_USER,
       password: process.env.POSTGRES_PASSWORD,
       database: process.env.POSTGRES_DATABASE,
-      entities: [User],
+      entities: [User, SyncConfig],
       synchronize: true,
     }),
     AuthModule,
+    DriveModule,
     PassportModule.register({ session: true }),
   ],
   controllers: [],

@@ -8,9 +8,8 @@ import {
   Request,
 } from '@nestjs/common';
 import { Response } from 'express';
-import { GoogleAuthGuard } from './utils/Guard';
 import { AuthService } from './auth.service';
-import { CheckTokenExpiryGuard } from './utils/checkTokenExpiryGuard';
+import { GoogleAuthGuard, CheckTokenExpiryGuard } from './utils/Guard';
 
 @Controller('auth')
 export class AuthController {
@@ -52,6 +51,6 @@ export class AuthController {
     res.clearCookie('access_token');
     res.clearCookie('refresh_token');
     this.authService.revokeGoogleToken(refreshToken);
-    res.redirect('http://localhost:3000/api');
+    res.redirect('http://localhost:3000/api/auth/google/login');
   }
 }

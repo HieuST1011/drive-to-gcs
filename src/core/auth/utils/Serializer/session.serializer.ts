@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { PassportSerializer } from '@nestjs/passport';
-import { AuthService } from '../auth.service';
+import { AuthService } from '../../auth.service';
 import { User } from 'src/typeorm/entities/User';
 
 @Injectable()

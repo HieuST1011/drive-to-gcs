@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/typeorm/entities/User';
-import { UserDetails } from 'src/utils/types';
+import { UserDetails } from 'src/types/userDetail';
 import { Repository } from 'typeorm';
 import axios from 'axios';
 
@@ -34,6 +34,10 @@ export class AuthService {
 
   async findUser(id: number) {
     return await this.userRepository.findOneBy({ id });
+  }
+
+  async findUserByAccessToken(token: string) {
+    return await this.userRepository.findOneBy({ accessToken: token });
   }
 
   async getNewAccessToken(refreshToken: string): Promise<string> {

@@ -1,44 +1,19 @@
 Sync Drive to GCS
-- Hệ thống kết nối Google Drive
-  - Hệ thống 1 user (dành cho Sync Drive)
+- Google Drive connection system
+  - 1 user system (for Sync Drive) // x Check
   - OAuth App
-    - Danh sách các quyền
-  - OAuth Login Google Drive
-  - Cấu hình thư mục cần đồng bộ
-  - Cấu hình Drive Push Notification
-    - https://developers.google.com/drive/api/reference/rest/v3/files/watch?hl=vi&authuser=0
-    - https://developers.google.com/drive/api/reference/rest/v3/channels?authuser=0&hl=vi#Channel
-  - Các cấu hình được lưu vào database
-  - Xóa cấu hình Drive Push Notification
-    - https://developers.google.com/drive/api/reference/rest/v3/channels/stop?hl=vi&authuser=0
-- Webhook nhận Drive Push Notification khi có changes on file
-  - Push message vào Kafka
-  - Handle message trong kafka
+    - List of permissions // x Check 
+  - OAuth Login Google Drive // x Check
+  - Configure folders that need to be synchronized 
+  - Configure Drive Push Notification
+    - https://developers.google.com/drive/api/reference/rest/v3/files/watch?hl=en&authuser=0
+    - https://developers.google.com/drive/api/reference/rest/v3/channels?authuser=0&hl=en#Channel
+  - Configurations are saved to the database
+  - Delete Drive Push Notification configuration
+    - https://developers.google.com/drive/api/reference/rest/v3/channels/stop?hl=en&authuser=0
+- Webhook receives Drive Push Notification when there are changes on file
+  - Push messages into Kafka
+  - Handle messages in kafka
     - Refresh OAuth Token
-    - Truy cập file có changes
-    - Upload file lên GCS
-
-http://localhost:3000/api/auth/google/redirect
-
-https://accounts.google.com/o/oauth2/v2/auth : Authorization endpoint
-https://oauth2.googleapis.com/token : Token endpoint
-can u fix my google Stratery:
-i want a     - Requesting Authorization code
-             - Requesting ACCESS TOKEN and REFRESH TOKEN
-
-{
-  "access_token": "ya29.a0AeDClZAiL9nxruQTAQKT9OE8fnQNGnBMtbGM8sHmnX6StePm_q0pSSzmFUkGakCyx-m9BmeKlvAgZIlPMZndJgfPKfBqZxt6A3purpLRdZUCG3MFzDMydRi2hvCE_xrwhZQjCJV6ddYl_e4FXdItsCQnqAoMtNAWVNBaFiRyaCgYKAegSARASFQHGX2MiJb7_Ks3rVMSFmQJdcf-qlw0175", 
-  "scope": "https://www.googleapis.com/auth/drive.file", 
-  "token_type": "Bearer", 
-  "expires_in": 3599, 
-  "refresh_token": "1//04ftzcNa_1gpWCgYIARAAGAQSNwF-L9Ir6ReeYvvex8OJcSPhDtr6FGjs1z2iwe8e7DBvqMrmMc1KAOIDtWnObGXB7TLj8bBYyQ8"
-}
-
-
-{
-  "access_token": "ya29.a0AeDClZCZIXrHGJl5A0Qvs6pOZ1fOVGfk2gOduGOjRuGV5H_3PqVZCokf0BJ_N4yEfe-elE2L7OZE6cAiY4dU60uKxFbbQDBOa7lB7Vx4FMyLzHsrWnhmOqnjMkPXj-Lq8fS0eesGZW3WkNV_qrJ_RN899lKxlB9cbJTPj9BNaCgYKAUASARASFQHGX2Miin-8yKK7fCt-oP-OdfEiGA0175", 
-  "scope": "https://www.googleapis.com/auth/drive.file", 
-  "token_type": "Bearer", 
-  "expires_in": 3599, 
-  "refresh_token": "1//04KTKb4KaTdPeCgYIARAAGAQSNwF-L9IrQfFfmnDZ-zcC0v23OByEcTfrc-McMUeK5Wjr8q3Aep2mr7RsKuj-vuJeE2vRovOE1g8"
-}
+    - Access files with changes
+    - Upload files to GCS

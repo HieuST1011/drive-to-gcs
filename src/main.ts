@@ -20,6 +20,12 @@ async function bootstrap() {
   app.use(passport.initialize());
   app.use(passport.session());
   app.use(cookieParser());
+
+  app.enableCors({
+    origin: 'http://localhost:3000', // Change to your frontend URL
+    credentials: true, // Allow cookies to be sent
+  });
+
   await app.listen(3000);
 }
 bootstrap();

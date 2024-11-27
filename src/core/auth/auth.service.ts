@@ -19,7 +19,9 @@ export class AuthService {
     if (user) {
       // Cập nhật accessToken và refreshToken
       user.accessToken = tokens?.accessToken || user.accessToken;
-      user.refreshToken = tokens?.refreshToken || user.refreshToken;
+      if (tokens?.refreshToken) {
+        user.refreshToken = tokens.refreshToken;
+      }
       return this.userRepository.save(user);
     }
 

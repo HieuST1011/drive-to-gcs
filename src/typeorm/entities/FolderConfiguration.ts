@@ -1,4 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity()
 export class FolderConfiguration {
@@ -20,6 +26,15 @@ export class FolderConfiguration {
   @Column({ nullable: true })
   webhookUrl: string; // URL for the webhook to send notifications to
 
-  @Column({ nullable: true })
-  expiration: string; // The expiration time of the notification channel
+  @Column({ type: 'timestamp', nullable: true })
+  expiration: Date; // The expiration time of the notification channel
+
+  @Column({ default: 'active' })
+  syncStatus: string; // Possible values: 'active', 'paused', 'completed'
+
+  @CreateDateColumn()
+  createdAt: Date; // Automatically managed by TypeORM
+
+  @UpdateDateColumn()
+  updatedAt: Date; // Automatically managed by TypeORM
 }

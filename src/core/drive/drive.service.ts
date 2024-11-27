@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { google, drive_v3 } from 'googleapis';
+import { OAuth2Client } from 'google-auth-library';
 import { v4 as uuidv4 } from 'uuid';
 
 interface Channel {
@@ -18,15 +19,24 @@ interface Channel {
 @Injectable()
 export class GoogleDriveService {
   private driveClient: drive_v3.Drive;
+  private readonly authClient: OAuth2Client;
 
-  constructor() {}
-
-  async initializeClient(accessToken: string): Promise<void> {
-    const auth = new google.auth.OAuth2();
-    auth.setCredentials({ access_token: accessToken });
-    this.driveClient = google.drive({ version: 'v3', auth });
+  constructor() {
+    this.authClient = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      process.env.GOOGLE_REDIRECT_URI,
+    );
   }
 
+  private async initializeClient(accessToken: string): Promise<void> {
+    this.authClient.setCredentials({ access_token: accessToken });
+    this.driveClient = google.drive({ version: 'v3', auth: this.authClient });
+  }
+
+  /**
+   * List all folders in the user's Google Drive
+   */
   async listFolders(accessToken: string): Promise<drive_v3.Schema$File[]> {
     await this.initializeClient(accessToken);
 
@@ -37,52 +47,56 @@ export class GoogleDriveService {
     return response.data.files || [];
   }
 
-  // Set up a push notification for a specific file or folder
-  // Watch a specific file or folder for changes
+  /**
+   * Watch a specific file or folder for changes
+   */
   async watchFileForChanges(
     accessToken: string,
     fileId: string,
-    webhookUrl: string,
-  ): Promise<any> {
+    webhookUrl: string | null,
+  ): Promise<drive_v3.Schema$Channel> {
     await this.initializeClient(accessToken);
 
-    const channelId = uuidv4(); // Generate a unique channel ID
-
+    const channelId = uuidv4();
     const channel: Channel = {
-      id: channelId, // Unique channel ID
-      type: 'web_hook', // Use web_hook as the delivery type
-      address: webhookUrl, // Your server endpoint for receiving notifications
-      resourceId: fileId, // The file or folder ID you want to watch
-      resourceUri: `https://www.googleapis.com/drive/v3/files/${fileId}`, // Full resource URI for the file
-      kind: 'api#channel', // Identifies this as a channel object
-      payload: true, // Include payload data with the notification
-      // Optional parameters
-      params: {
-        customKey: 'customValue',
-      },
+      id: channelId,
+      type: 'web_hook',
+      address: webhookUrl || '',
+      resourceId: fileId,
+      resourceUri: `https://www.googleapis.com/drive/v3/files/${fileId}`,
+      kind: 'api#channel',
+      payload: true,
     };
 
-    try {
-      // Start watching the file using Google Drive API
-      const response = await this.driveClient.files.watch({
-        fileId,
-        requestBody: channel,
-      });
-
-      // Optionally, you can save the channel configuration to your database
-      // await this.saveChannelConfiguration(response.data);
-
-      return response.data;
-    } catch (error) {
-      console.error('Error starting watch:', error);
-      throw new Error('Failed to set up file watch');
+    if (webhookUrl) {
+      try {
+        const response = await this.driveClient.files.watch({
+          fileId,
+          requestBody: channel,
+        });
+        return response.data; // Return the channel data
+      } catch (error) {
+        console.error('Error starting watch:', error);
+        throw new Error('Failed to set up file watch');
+      }
+    } else {
+      // If no webhookUrl is provided, return a placeholder response indicating no watch was set
+      console.warn('No webhook URL provided, skipping watch setup.');
+      return { id: channelId, kind: 'api#channel', resourceId: fileId };
     }
   }
 
-  // Stop the push notification for a channel
-  async stopChannelWatch(channelId: string): Promise<void> {
+  /**
+   * Stop the push notification for a specific channel
+   */
+  async stopChannelWatch(
+    accessToken: string,
+    channelId: string,
+  ): Promise<void> {
+    await this.initializeClient(accessToken);
+
     const channel: drive_v3.Schema$Channel = {
-      id: channelId, // The ID of the channel to stop
+      id: channelId,
       kind: 'api#channel',
     };
 
@@ -94,6 +108,69 @@ export class GoogleDriveService {
     } catch (error) {
       console.error('Error stopping channel watch:', error);
       throw new Error('Failed to stop watching the channel');
+    }
+  }
+
+  /**
+   * List files in a specific folder
+   */
+  async listFilesInFolder(
+    accessToken: string,
+    folderId: string,
+  ): Promise<drive_v3.Schema$File[]> {
+    await this.initializeClient(accessToken);
+
+    const response = await this.driveClient.files.list({
+      q: `'${folderId}' in parents`,
+      fields: 'files(id, name, mimeType)',
+    });
+    return response.data.files || [];
+  }
+
+  /**
+   * Download a file from Google Drive
+   */
+  async downloadFile(
+    accessToken: string,
+    fileId: string,
+  ): Promise<NodeJS.ReadableStream> {
+    await this.initializeClient(accessToken);
+
+    try {
+      const response = await this.driveClient.files.get(
+        { fileId, alt: 'media' },
+        { responseType: 'stream' },
+      );
+      return response.data as NodeJS.ReadableStream;
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      throw new Error('Failed to download file');
+    }
+  }
+
+  /**
+   * Get file details by file ID from Google Drive.
+   * @param accessToken The access token for the user.
+   * @param fileId The file ID of the file to fetch.
+   * @returns The file details from Google Drive.
+   */
+  async getFileDetails(
+    accessToken: string,
+    fileId: string,
+  ): Promise<drive_v3.Schema$File> {
+    await this.initializeClient(accessToken);
+
+    try {
+      // Make a request to get file details
+      const response = await this.driveClient.files.get({
+        fileId: fileId,
+        fields: 'id, name, mimeType, createdTime, modifiedTime, size',
+      });
+
+      return response.data; // Return the file details
+    } catch (error) {
+      console.error('Error fetching file details:', error);
+      throw new Error('Failed to fetch file details.');
     }
   }
 }

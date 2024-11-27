@@ -20,6 +20,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         'https://www.googleapis.com/auth/drive.file',
         'https://www.googleapis.com/auth/drive.appdata',
         'https://www.googleapis.com/auth/drive.install',
+        'https://www.googleapis.com/auth/devstorage.full_control',
       ],
     });
   }

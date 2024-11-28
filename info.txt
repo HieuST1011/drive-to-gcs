@@ -4,14 +4,14 @@ Sync Drive to GCS
   - OAuth App
     - List of permissions // x Check 
   - OAuth Login Google Drive // x Check
-  - Configure folders that need to be synchronized 
-  - Configure Drive Push Notification
+  - Configure folders that need to be synchronized  // x Check
+  - Configure Drive Push Notification // x Check
     - https://developers.google.com/drive/api/reference/rest/v3/files/watch?hl=en&authuser=0
     - https://developers.google.com/drive/api/reference/rest/v3/channels?authuser=0&hl=en#Channel
-  - Configurations are saved to the database
-  - Delete Drive Push Notification configuration
+  - Configurations are saved to the database // x Check
+  - Delete Drive Push Notification configuration // x Check
     - https://developers.google.com/drive/api/reference/rest/v3/channels/stop?hl=en&authuser=0
-- Webhook receives Drive Push Notification when there are changes on file
+- Webhook receives Drive Push Notification when there are changes on file // x Check
   - Push messages into Kafka
   - Handle messages in kafka
     - Refresh OAuth Token

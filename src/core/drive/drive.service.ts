@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { google, drive_v3 } from 'googleapis';
+import { InjectRepository } from '@nestjs/typeorm';
 import { OAuth2Client } from 'google-auth-library';
+import { drive_v3, google } from 'googleapis';
+import { FolderConfiguration } from 'src/typeorm/entities/FolderConfiguration';
+import { Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 
 interface Channel {
@@ -21,7 +24,10 @@ export class GoogleDriveService {
   private driveClient: drive_v3.Drive;
   private readonly authClient: OAuth2Client;
 
-  constructor() {
+  constructor(
+    @InjectRepository(FolderConfiguration)
+    private readonly folderConfigRepository: Repository<FolderConfiguration>,
+  ) {
     this.authClient = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET,
@@ -92,12 +98,14 @@ export class GoogleDriveService {
   async stopChannelWatch(
     accessToken: string,
     channelId: string,
+    resourceId: string,
   ): Promise<void> {
     await this.initializeClient(accessToken);
 
     const channel: drive_v3.Schema$Channel = {
       id: channelId,
       kind: 'api#channel',
+      resourceId: resourceId,
     };
 
     try {
@@ -172,5 +180,44 @@ export class GoogleDriveService {
       console.error('Error fetching file details:', error);
       throw new Error('Failed to fetch file details.');
     }
+  }
+
+  async processWebhookNotification(
+    channelId: string,
+    resourceId: string,
+    eventType: string,
+  ): Promise<void> {
+    console.log('Processing notification:', {
+      channelId,
+      resourceId,
+      eventType,
+    });
+
+    // Find the folder configuration by channel ID
+    const folderConfig = await this.folderConfigRepository.findOne({
+      where: { channelId },
+    });
+
+    if (!folderConfig) {
+      console.warn('No folder configuration found for channel:', channelId);
+      return;
+    }
+
+    // Fetch the updated folder details from Google Drive
+    const accessToken = '<ACCESS_TOKEN>'; // Retrieve the user's access token
+    const folderDetails = await this.getFileDetails(
+      accessToken,
+      folderConfig.folderId,
+    );
+
+    // Update the folder name or other details in your database
+    if (folderDetails.name !== folderConfig.folderName) {
+      folderConfig.folderName = folderDetails.name;
+      await this.folderConfigRepository.save(folderConfig);
+
+      console.log('Folder name updated in database:', folderDetails.name);
+    }
+
+    // Notify the rest of your application (e.g., via events, WebSocket, etc.)
   }
 }

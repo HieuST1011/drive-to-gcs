@@ -16,6 +16,16 @@ export class FolderConfigService {
     private readonly googleDriveService: GoogleDriveService, // Injecting GoogleDriveService
   ) {}
 
+  async saveFolderConfig(folder: FolderConfiguration) {
+    await this.folderConfigRepository.save(folder);
+  }
+
+  async findFolderById(id: string) {
+    return await this.folderConfigRepository.findOne({
+      where: { channelId: id },
+    });
+  }
+
   /**
    * List all folder configurations for a specific user.
    */
@@ -31,6 +41,7 @@ export class FolderConfigService {
     folderId: string,
     folderName: string,
     webhookUrl: string | null,
+    accessToken: string,
   ): Promise<FolderConfiguration> {
     // Check if the folder is already configured
     const existingConfig = await this.folderConfigRepository.findOne({
@@ -53,13 +64,14 @@ export class FolderConfigService {
     try {
       // Initialize push notification for the folder
       const channel = await this.googleDriveService.watchFileForChanges(
-        userId,
+        accessToken,
         folderId,
         webhookUrl,
       );
 
       // Save the channel ID and expiration details
       folderConfig.channelId = channel.id;
+      folderConfig.resourceId = channel.resourceId;
       // If expiration is provided and is a valid date string, set it
       if (
         channel.expiration &&
@@ -81,7 +93,12 @@ export class FolderConfigService {
   /**
    * Delete a folder configuration and stop push notifications for the folder.
    */
-  async deleteConfiguration(userId: string, folderId: string): Promise<void> {
+  async deleteConfiguration(
+    userId: string,
+    folderId: string,
+    accessToken: string,
+    resourceId: string,
+  ): Promise<void> {
     // Find the folder configuration
     const folderConfig = await this.folderConfigRepository.findOne({
       where: { userId, folderId },
@@ -95,8 +112,9 @@ export class FolderConfigService {
     if (folderConfig.channelId) {
       try {
         await this.googleDriveService.stopChannelWatch(
-          userId,
+          accessToken,
           folderConfig.channelId,
+          resourceId,
         );
       } catch (error) {
         console.warn('Error while stopping Google Drive channel:', error);

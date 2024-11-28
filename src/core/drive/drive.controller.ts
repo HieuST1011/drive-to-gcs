@@ -2,12 +2,12 @@ import {
   Controller,
   Get,
   Post,
-  Delete,
   Body,
   Request,
   UseGuards,
   HttpException,
   HttpStatus,
+  Delete,
 } from '@nestjs/common';
 import { CheckTokenExpiryGuard } from '../auth/utils/Guard';
 import { FolderConfigService } from '../folderConfig/folderConfig.service';
@@ -64,6 +64,8 @@ export class GoogleDriveController {
     @Body() body: { folderId: string; folderName: string; webhookUrl?: string },
   ) {
     const userId = req.user.id; // Guaranteed by the guard
+    const accessToken = req.cookies['access_token'];
+
     const { folderId, folderName, webhookUrl } = body;
 
     if (!folderId || !folderName) {
@@ -79,6 +81,7 @@ export class GoogleDriveController {
         folderId,
         folderName,
         webhookUrl,
+        accessToken,
       );
     } catch (error) {
       console.error('Error saving folder configuration:', error);
@@ -102,13 +105,23 @@ export class GoogleDriveController {
   ) {
     const userId = req.user.id; // Guaranteed by the guard
     const { folderId } = body;
+    const accessToken = req.cookies['access_token'];
 
     if (!folderId) {
       throw new HttpException('Folder ID is required', HttpStatus.BAD_REQUEST);
     }
 
+    // Find the corresponding folder configuration from the database
+    const folderConfig =
+      await this.folderConfigService.findFolderById(folderId);
+
     try {
-      await this.folderConfigService.deleteConfiguration(userId, folderId);
+      await this.folderConfigService.deleteConfiguration(
+        userId,
+        folderId,
+        accessToken,
+        folderConfig.resourceId,
+      );
       return { message: 'Folder configuration deleted successfully' };
     } catch (error) {
       console.error('Error deleting folder configuration:', error);

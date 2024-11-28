@@ -24,6 +24,9 @@ export class FolderConfiguration {
   channelId: string; // The channel ID for the push notification
 
   @Column({ nullable: true })
+  resourceId: string; // The Google Drive resource ID (file/folder ID)
+
+  @Column({ nullable: true })
   webhookUrl: string; // URL for the webhook to send notifications to
 
   @Column({ type: 'timestamp', nullable: true })
@@ -31,6 +34,9 @@ export class FolderConfiguration {
 
   @Column({ default: 'active' })
   syncStatus: string; // Possible values: 'active', 'paused', 'completed'
+
+  @Column({ default: false })
+  deleted: boolean; // Add a 'deleted' field to mark folders as deleted
 
   @CreateDateColumn()
   createdAt: Date; // Automatically managed by TypeORM

@@ -12,6 +12,13 @@ export class CheckTokenExpiryGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
+    const url = request.url;
+
+    // Skip token validation for webhook URLs
+    if (url.startsWith('/api/webhook')) {
+      return true; // Skip the guard for webhook URLs
+    }
+
     const accessToken = request.cookies['access_token'];
     let validAccessToken = accessToken;
 

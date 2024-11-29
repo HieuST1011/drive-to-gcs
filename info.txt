@@ -12,8 +12,8 @@ Sync Drive to GCS
   - Delete Drive Push Notification configuration // x Check
     - https://developers.google.com/drive/api/reference/rest/v3/channels/stop?hl=en&authuser=0
 - Webhook receives Drive Push Notification when there are changes on file // x Check
-  - Push messages into Kafka
+  - Push messages into Kafka // x Check
   - Handle messages in kafka
-    - Refresh OAuth Token
-    - Access files with changes
-    - Upload files to GCS
+    - Refresh OAuth Token // x Check
+    - Access files with changes // x Check
+    - Upload files to GCS // ???

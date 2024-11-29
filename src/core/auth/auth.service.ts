@@ -105,4 +105,9 @@ export class AuthService {
   async getRefreshTokenFromCookies(req: any) {
     return req.cookies['refresh_token'] || null;
   }
+
+  // Update User
+  async updateUser(user: User) {
+    await this.userRepository.save(user);
+  }
 }

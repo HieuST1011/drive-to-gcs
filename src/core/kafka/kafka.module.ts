@@ -1,25 +1,21 @@
-import { Module } from '@nestjs/common';
-import { ClientsModule, Transport } from '@nestjs/microservices';
-import { KafkaService } from './kafka.service';
+import { forwardRef, Module } from '@nestjs/common';
+import { DriveNotificationsConsumer } from './service/consumer.service';
+import { KafkaProducerService } from './service/poduct.service';
+import { AuthService } from '../auth/auth.service';
+import { AuthModule } from '../auth/auth.module';
+import { FolderConfigModule } from '../folderConfig/folderConfig.module';
+import { DriveModule } from '../drive/drive.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { User } from 'src/typeorm/entities/User';
 
 @Module({
   imports: [
-    ClientsModule.register([
-      {
-        name: 'google-drive-topic',
-        transport: Transport.KAFKA,
-        options: {
-          client: {
-            brokers: ['localhost:9092'], // Kafka brokers (adjust as needed)
-          },
-          consumer: {
-            groupId: 'google-drive-consumer-group', // Unique consumer group ID
-          },
-        },
-      },
-    ]),
-  ],
-  providers: [KafkaService],
-  exports: [KafkaService],
+    AuthModule,
+    forwardRef(() => FolderConfigModule),
+    DriveModule,
+    TypeOrmModule.forFeature([User]),
+  ], // Ensure FolderConfigModule is imported
+  providers: [KafkaProducerService, DriveNotificationsConsumer, AuthService],
+  exports: [KafkaProducerService], // Optionally export services if needed elsewhere
 })
 export class KafkaModule {}

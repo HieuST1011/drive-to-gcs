@@ -7,6 +7,8 @@ import { PassportModule } from '@nestjs/passport';
 import { DriveModule } from './core/drive/drive.module';
 import { FolderConfiguration } from './typeorm/entities/FolderConfiguration';
 import { FolderConfigModule } from './core/folderConfig/folderConfig.module';
+import { ClientsModule, Transport } from '@nestjs/microservices';
+import { KafkaModule } from './core/kafka/kafka.module';
 
 @Module({
   imports: [
@@ -25,6 +27,22 @@ import { FolderConfigModule } from './core/folderConfig/folderConfig.module';
     DriveModule,
     FolderConfigModule,
     PassportModule.register({ session: true }),
+    //////////////////////////////////////////
+    ClientsModule.register([
+      {
+        name: 'google-drive-topic',
+        transport: Transport.KAFKA,
+        options: {
+          client: {
+            brokers: ['localhost:9092'], // Kafka brokers (adjust as needed)
+          },
+          consumer: {
+            groupId: 'drive-group', // Unique consumer group ID
+          },
+        },
+      },
+    ]),
+    KafkaModule,
   ],
   controllers: [],
   providers: [],

@@ -26,6 +26,12 @@ export class FolderConfigService {
     });
   }
 
+  async findByFolderId(folderId: string) {
+    return await this.folderConfigRepository.findOne({
+      where: { folderId: folderId },
+    });
+  }
+
   /**
    * List all folder configurations for a specific user.
    */
